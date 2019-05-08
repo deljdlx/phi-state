@@ -24,11 +24,28 @@ class State
     private $values = array();
 
 
-
     public function addDimension(Dimension $dimension)
     {
         $this->dimensions[$dimension->getName()] = $dimension;
-        $this->setDimensionValue($dimension->getName(), null);
+
+
+        $valueObject = new DimensionValue(
+            $dimension,
+            null
+        );
+
+
+        $self = $this;
+        $valueObject->addEventListener(
+            DimensionValue::EVENT_CHANGE,
+            function ($event) use ($self) {
+                $self->relayChangeDimensionValueEvent($event);
+            }
+        );
+
+        $this->values[$dimension->getName()] = $valueObject;
+
+
         return $this;
     }
 
@@ -50,7 +67,6 @@ class State
     }
 
 
-
     public function getDimensionValue($name)
     {
         return $this->getDimensionValueObject($name)->getValue();
@@ -65,51 +81,46 @@ class State
     {
         $dimension = $this->getDimension($name);
 
-        if(array_key_exists($name, $this->values)) {
+        if (array_key_exists($name, $this->values)) {
             return $this->values[$dimension->getName()];
         }
         else {
 
-            $dimension = $this->getDimension($name);
-            $valueObject= new DimensionValue(
-                $dimension,
-                null
-            );
-
-            $self = $this;
-            $valueObject->addEventListener(
-                get_class($valueObject).'.'.DimensionValue::EVENT_CHANGE,
-                function($event) use ($self) {
-                    $self->relayEvent($event);
-                });
-
-            $this->values[$dimension->getName()] = $valueObject;
-
-            return $this->values[$dimension->getName()];
         }
     }
 
 
-
-    protected function relayEvent(Event $event)
+    /**
+     * @param Event $event
+     * @return $this
+     */
+    protected function relayChangeDimensionValueEvent(Event $event)
     {
+
         $event->setVariable('state', $this);
         $this->fireEvent($event);
         return $this;
     }
 
+    /**
+     * @return DimensionValue[]
+     */
     public function getValues()
     {
         return $this->values;
     }
 
+    /**
+     * @param $name
+     * @return Dimension
+     */
     public function getDimension($name)
     {
-        if(array_key_exists($name, $this->dimensions)) {
+        if (array_key_exists($name, $this->dimensions)) {
             return $this->dimensions[$name];
         }
 
-        throw new Exception('Dimension '.$name.' does not exist');
+        throw new Exception('Dimension ' . $name . ' does not exist');
     }
 
 
@@ -120,11 +131,9 @@ class State
         $valueObject->setValue($value);
 
 
-
         $this->values[$valueObject->getDimension()->getName()] = $valueObject;
         return $this;
     }
-
 
 
 }

@@ -32,11 +32,15 @@ class DimensionValue
         if($value !== $this->value) {
 
             $this->fireEvent(static::EVENT_CHANGE, array(
-                'value' => $this
-            ));
+                'old-value' => $this->value,
+                'new-value' => $value,
+                'instance' => $this
+             ));
             if(get_class($this) !==__CLASS__) {
                 $this->fireEvent(static::EVENT_CHANGE, array(
-                    'value' => $this
+                    'old-value' => $this->value,
+                    'new-value' => $value,
+                    'instance' => $this
                 ));
             }
 
